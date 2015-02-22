@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
+<title>FireReversi</title>
+<script src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+<script src='https://cdn.firebase.com/js/client/2.0.4/firebase.js'></script>
+<style type="text/css">
+table { margin: auto; }
+th { text-align: center; }
+input { display: none; }
+td {
+  background-color: #090;
+  border: 1px solid white;
+  width: 36px;
+  height: 36px;
+}
+.cell {
+  position: relative;
+  perspective: 200px;
+  width: 100%;
+  height: 100%;
+}
+.cell div {
+  backface-visibility: hidden;
+  border-radius: 50%;
+  width: 80%;
+  height: 80%;
+  position: absolute;
+  top: 10%;
+  left: 10%;
+}
+.cell .black {
+  background: black;
+  transform: rotateY(-180deg);
+  visibility: visible;
+  transition: all 0.5s ease;
+}
+.cell .white {
+  background: white;
+  transform: rotateY(0deg);
+  visibility: visible;
+  transition: all 0.5s ease;
+}
+.cell .marker {
+  visibility: hidden;
+}
+.cell input[name="stone"]:checked ~ .black {
+  transform: rotateY(0deg);
+  visibility: visible;
+}
+.cell input[name="stone"]:checked ~ .white {
+  transform: rotateY(180deg);
+  visibility: visible;
+}
+.cell input[name="space"]:checked ~ .black {
+  transform: rotateY(-90deg);
+  visibility: hidden;
+}
+.cell input[name="space"]:checked ~ .white {
+  transform: rotateY(90deg);
+  visibility: hidden;
+}
+.cell.black-attackable .marker {
+  visibility: visible;
+  background-color: rgba(0, 0, 0, 0.25);
+}
+.cell.white-attackable .marker {
+  visibility: visible;
+  background-color: rgba(255, 255, 255, 0.25);
+}
+.cell.attackable:hover {
+  background-color: #cc0;
+  cursor: pointer;
+}
+
+.game-list li {
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>FireReversi</h1>
+    <div class="row">
+      <div class="col-xs-12 col-lg-9">
+        <div class="form-group">
+          <table id="game_board">
+            <tr>
+              <th></th><th>a</th><th>b</th><th>c</th><th>d</th><th>e</th><th>f</th><th>g</th><th>h</th>
+            </tr>
+            <tr>
+              <th>1</th>
+              <td><div class="cell" id="cell_a1" data-point="a1"><input type="checkbox" name="space" checked="checked" id="space_a1"><input type="checkbox" name="stone" id="stone_a1"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_b1" data-point="b1"><input type="checkbox" name="space" checked="checked" id="space_b1"><input type="checkbox" name="stone" id="stone_b1"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_c1" data-point="c1"><input type="checkbox" name="space" checked="checked" id="space_c1"><input type="checkbox" name="stone" id="stone_c1"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_d1" data-point="d1"><input type="checkbox" name="space" checked="checked" id="space_d1"><input type="checkbox" name="stone" id="stone_d1"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_e1" data-point="e1"><input type="checkbox" name="space" checked="checked" id="space_e1"><input type="checkbox" name="stone" id="stone_e1"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_f1" data-point="f1"><input type="checkbox" name="space" checked="checked" id="space_f1"><input type="checkbox" name="stone" id="stone_f1"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_g1" data-point="g1"><input type="checkbox" name="space" checked="checked" id="space_g1"><input type="checkbox" name="stone" id="stone_g1"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_h1" data-point="h1"><input type="checkbox" name="space" checked="checked" id="space_h1"><input type="checkbox" name="stone" id="stone_h1"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+            </tr>
+            <tr>
+              <th>2</th>
+              <td><div class="cell" id="cell_a2" data-point="a2"><input type="checkbox" name="space" checked="checked" id="space_a2"><input type="checkbox" name="stone" id="stone_a2"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_b2" data-point="b2"><input type="checkbox" name="space" checked="checked" id="space_b2"><input type="checkbox" name="stone" id="stone_b2"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_c2" data-point="c2"><input type="checkbox" name="space" checked="checked" id="space_c2"><input type="checkbox" name="stone" id="stone_c2"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_d2" data-point="d2"><input type="checkbox" name="space" checked="checked" id="space_d2"><input type="checkbox" name="stone" id="stone_d2"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_e2" data-point="e2"><input type="checkbox" name="space" checked="checked" id="space_e2"><input type="checkbox" name="stone" id="stone_e2"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_f2" data-point="f2"><input type="checkbox" name="space" checked="checked" id="space_f2"><input type="checkbox" name="stone" id="stone_f2"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_g2" data-point="g2"><input type="checkbox" name="space" checked="checked" id="space_g2"><input type="checkbox" name="stone" id="stone_g2"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_h2" data-point="h2"><input type="checkbox" name="space" checked="checked" id="space_h2"><input type="checkbox" name="stone" id="stone_h2"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+            </tr>
+            <tr>
+              <th>3</th>
+              <td><div class="cell" id="cell_a3" data-point="a3"><input type="checkbox" name="space" checked="checked" id="space_a3"><input type="checkbox" name="stone" id="stone_a3"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_b3" data-point="b3"><input type="checkbox" name="space" checked="checked" id="space_b3"><input type="checkbox" name="stone" id="stone_b3"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_c3" data-point="c3"><input type="checkbox" name="space" checked="checked" id="space_c3"><input type="checkbox" name="stone" id="stone_c3"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_d3" data-point="d3"><input type="checkbox" name="space" checked="checked" id="space_d3"><input type="checkbox" name="stone" id="stone_d3"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_e3" data-point="e3"><input type="checkbox" name="space" checked="checked" id="space_e3"><input type="checkbox" name="stone" id="stone_e3"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_f3" data-point="f3"><input type="checkbox" name="space" checked="checked" id="space_f3"><input type="checkbox" name="stone" id="stone_f3"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_g3" data-point="g3"><input type="checkbox" name="space" checked="checked" id="space_g3"><input type="checkbox" name="stone" id="stone_g3"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_h3" data-point="h3"><input type="checkbox" name="space" checked="checked" id="space_h3"><input type="checkbox" name="stone" id="stone_h3"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+            </tr>
+            <tr>
+              <th>4</th>
+              <td><div class="cell" id="cell_a4" data-point="a4"><input type="checkbox" name="space" checked="checked" id="space_a4"><input type="checkbox" name="stone" id="stone_a4"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_b4" data-point="b4"><input type="checkbox" name="space" checked="checked" id="space_b4"><input type="checkbox" name="stone" id="stone_b4"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_c4" data-point="c4"><input type="checkbox" name="space" checked="checked" id="space_c4"><input type="checkbox" name="stone" id="stone_c4"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_d4" data-point="d4"><input type="checkbox" name="space" checked="checked" id="space_d4"><input type="checkbox" name="stone" id="stone_d4"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_e4" data-point="e4"><input type="checkbox" name="space" checked="checked" id="space_e4"><input type="checkbox" name="stone" id="stone_e4"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_f4" data-point="f4"><input type="checkbox" name="space" checked="checked" id="space_f4"><input type="checkbox" name="stone" id="stone_f4"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_g4" data-point="g4"><input type="checkbox" name="space" checked="checked" id="space_g4"><input type="checkbox" name="stone" id="stone_g4"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_h4" data-point="h4"><input type="checkbox" name="space" checked="checked" id="space_h4"><input type="checkbox" name="stone" id="stone_h4"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+            </tr>
+            <tr>
+              <th>5</th>
+              <td><div class="cell" id="cell_a5" data-point="a5"><input type="checkbox" name="space" checked="checked" id="space_a5"><input type="checkbox" name="stone" id="stone_a5"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_b5" data-point="b5"><input type="checkbox" name="space" checked="checked" id="space_b5"><input type="checkbox" name="stone" id="stone_b5"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_c5" data-point="c5"><input type="checkbox" name="space" checked="checked" id="space_c5"><input type="checkbox" name="stone" id="stone_c5"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_d5" data-point="d5"><input type="checkbox" name="space" checked="checked" id="space_d5"><input type="checkbox" name="stone" id="stone_d5"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_e5" data-point="e5"><input type="checkbox" name="space" checked="checked" id="space_e5"><input type="checkbox" name="stone" id="stone_e5"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_f5" data-point="f5"><input type="checkbox" name="space" checked="checked" id="space_f5"><input type="checkbox" name="stone" id="stone_f5"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_g5" data-point="g5"><input type="checkbox" name="space" checked="checked" id="space_g5"><input type="checkbox" name="stone" id="stone_g5"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_h5" data-point="h5"><input type="checkbox" name="space" checked="checked" id="space_h5"><input type="checkbox" name="stone" id="stone_h5"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+            </tr>
+            <tr>
+              <th>6</th>
+              <td><div class="cell" id="cell_a6" data-point="a6"><input type="checkbox" name="space" checked="checked" id="space_a6"><input type="checkbox" name="stone" id="stone_a6"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_b6" data-point="b6"><input type="checkbox" name="space" checked="checked" id="space_b6"><input type="checkbox" name="stone" id="stone_b6"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_c6" data-point="c6"><input type="checkbox" name="space" checked="checked" id="space_c6"><input type="checkbox" name="stone" id="stone_c6"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_d6" data-point="d6"><input type="checkbox" name="space" checked="checked" id="space_d6"><input type="checkbox" name="stone" id="stone_d6"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_e6" data-point="e6"><input type="checkbox" name="space" checked="checked" id="space_e6"><input type="checkbox" name="stone" id="stone_e6"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_f6" data-point="f6"><input type="checkbox" name="space" checked="checked" id="space_f6"><input type="checkbox" name="stone" id="stone_f6"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_g6" data-point="g6"><input type="checkbox" name="space" checked="checked" id="space_g6"><input type="checkbox" name="stone" id="stone_g6"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_h6" data-point="h6"><input type="checkbox" name="space" checked="checked" id="space_h6"><input type="checkbox" name="stone" id="stone_h6"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+            </tr>
+            <tr>
+              <th>7</th>
+              <td><div class="cell" id="cell_a7" data-point="a7"><input type="checkbox" name="space" checked="checked" id="space_a7"><input type="checkbox" name="stone" id="stone_a7"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_b7" data-point="b7"><input type="checkbox" name="space" checked="checked" id="space_b7"><input type="checkbox" name="stone" id="stone_b7"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_c7" data-point="c7"><input type="checkbox" name="space" checked="checked" id="space_c7"><input type="checkbox" name="stone" id="stone_c7"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_d7" data-point="d7"><input type="checkbox" name="space" checked="checked" id="space_d7"><input type="checkbox" name="stone" id="stone_d7"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_e7" data-point="e7"><input type="checkbox" name="space" checked="checked" id="space_e7"><input type="checkbox" name="stone" id="stone_e7"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_f7" data-point="f7"><input type="checkbox" name="space" checked="checked" id="space_f7"><input type="checkbox" name="stone" id="stone_f7"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_g7" data-point="g7"><input type="checkbox" name="space" checked="checked" id="space_g7"><input type="checkbox" name="stone" id="stone_g7"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_h7" data-point="h7"><input type="checkbox" name="space" checked="checked" id="space_h7"><input type="checkbox" name="stone" id="stone_h7"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+            </tr>
+            <tr>
+              <th>8</th>
+              <td><div class="cell" id="cell_a8" data-point="a8"><input type="checkbox" name="space" checked="checked" id="space_a8"><input type="checkbox" name="stone" id="stone_a8"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_b8" data-point="b8"><input type="checkbox" name="space" checked="checked" id="space_b8"><input type="checkbox" name="stone" id="stone_b8"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_c8" data-point="c8"><input type="checkbox" name="space" checked="checked" id="space_c8"><input type="checkbox" name="stone" id="stone_c8"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_d8" data-point="d8"><input type="checkbox" name="space" checked="checked" id="space_d8"><input type="checkbox" name="stone" id="stone_d8"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_e8" data-point="e8"><input type="checkbox" name="space" checked="checked" id="space_e8"><input type="checkbox" name="stone" id="stone_e8"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_f8" data-point="f8"><input type="checkbox" name="space" checked="checked" id="space_f8"><input type="checkbox" name="stone" id="stone_f8"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_g8" data-point="g8"><input type="checkbox" name="space" checked="checked" id="space_g8"><input type="checkbox" name="stone" id="stone_g8"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+              <td><div class="cell" id="cell_h8" data-point="h8"><input type="checkbox" name="space" checked="checked" id="space_h8"><input type="checkbox" name="stone" id="stone_h8"><div class="black"></div><div class="white"></div><div class="marker"></div></div></td>
+            </tr>
+          </table>
+        </div>
+        <div class="text-center well well-sm">
+          <span id="current_player">&nbsp;</span>
+          <button type="button" id="pass" class="btn btn-xs btn-default pull-right" disabled="disabled">Pass</button>
+        </div>
+        <div class="well well-sm text-center" id="message">&nbsp;</div>
+      </div>
+      <div class="col-xs-12 col-lg-3">
+        <div>
+          <h3>新規ゲームを作る</h3>
+          <div class="input-group">
+            <input type="text" id="game_name" class="form-control" placeholder="部屋名">
+            <div class="input-group-btn">
+              <button type="button" class="create-game btn btn-default" id="create_game" disabled="disabled">作成</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3>既存ゲームに参加/観戦</h3>
+          <ul class="game-list list-group" id="game_list">
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script type="text/javascript">
+// (function ($) {
+  'use strict';
+
+  var BLACK = 'black';
+  var WHITE = 'white';
+  var COLS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  var ROWS = ['1', '2', '3', '4', '5', '6', '7', '8'];
+  var ALL_POINTS = $.map(ROWS, function (y) { return $.map(COLS, function (x) { return x + y; }); });
+  var FLIP_LINES = (function () {
+    var r = {};
+    for (var y = 0; y < 8; ++y) {
+      for (var x = 0; x < 8; ++x) {
+        r[COLS[x] + ROWS[y]] = (function () {
+          var lines = [];
+          for (var dy = -1; dy <= 1; ++dy) {
+            for (var dx = -1; dx <= 1; ++dx) {
+              if (dx == 0 && dy == 0) { continue; }
+
+              var line = [];
+              for (var ix = x + dx, iy = y + dy; 0 <= ix && ix < 8 && 0 <= iy && iy < 8; ix += dx, iy += dy) {
+                line.push(COLS[ix] + ROWS[iy]);
+              }
+              if (1 < line.length) { lines.push(line); }
+            }
+          }
+          return lines;
+        })();
+      }
+    }
+    return r;
+  })();
+  var FB = new Firebase('https://tvulifietbmpusktrscc.firebaseio.com');
+
+  var DelayingQueue = function () {
+    this.queue = [];
+    this.timer = null;
+  }
+  DelayingQueue.prototype = {
+    push: function (f, t) {
+      this.queue.push([f, t]);
+      if (!this.timer) {
+        this.timer = 0;
+        this.run();
+      }
+    },
+    run: function () {
+      if (this.queue.length <= 0) {
+        this.timer = null;
+        return;
+      }
+      var sc = this.queue.shift();
+      var func = sc[0];
+      var delay = sc[1];
+      var self = this;
+      var next = function () { self.run(); };
+      func();
+      this.timer = setTimeout(next, delay);
+    },
+    clear: function () {
+      this.queue = [];
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+  };
+
+  var Cell = function (pt) {
+    this.point = pt;
+    this.$obj = $(document.getElementById("cell_" + pt));
+    this.$space = $(document.getElementById("space_" + pt));
+    this.$stone = $(document.getElementById("stone_" + pt));
+  };
+  Cell.prototype = {
+    putStone: function (stone) {
+      this.$space.prop('checked', false);
+      this.$stone.prop('checked', stone == BLACK);
+    },
+    flipStone: function () {
+      this.$space.prop('checked', false);
+      this.$stone.prop('checked', !this.$stone.prop('checked'));
+    },
+    removeStone: function () {
+      this.$space.prop('checked', true);
+      this.$stone.prop('checked', false);
+    },
+    isEmpty: function () { return this.$space.prop('checked'); },
+    getStone: function () { return this.$stone.prop('checked') ? BLACK : WHITE; },
+    resetAttackable: function () {
+      this.$obj.removeClass('attackable black-attackable white-attackable')
+    },
+    makeAttackable: function (G, player) {
+      this.$obj.addClass(player + '-attackable');
+      if (G.canPlay(player)) {
+        this.$obj.addClass('attackable').data('player', player);
+      }
+    },
+  };
+  var CELLS = (function () {
+    var r = {};
+    $.each(ALL_POINTS, function (_, pt) {
+      r[pt] = new Cell(pt);
+    });
+    return r;
+  })();
+
+  function flipPoints (points, ally) {
+    var r = [];
+    for (var i = 0; i < points.length; ++i) {
+      var pt = points[i];
+      if (CELLS[pt].isEmpty()) { return []; }
+      if (CELLS[pt].getStone() == ally) { return r; }
+      r.push(pt);
+    }
+    return [];
+  }
+
+  var Game = {};
+  Game.login = function () {
+    FB.authAnonymously(function(error, user) {
+      if (error) {
+        console.log('Login Failed!', error);
+        return;
+      }
+      Game.user = user;
+      Game.queue = new DelayingQueue();
+      $('#create_game').on('click', function () {
+        Game.create($('#game_name').val());
+        $('#game_name').val('');
+      }).prop('disabled', false);
+
+      FB.limitToLast(100).on("child_added", function (snapshot) {
+        var key = snapshot.key();
+        var val = snapshot.val();
+        var $icon = $('<span>');
+        var $item = $('<li>').text(val.name).addClass('list-group-item').attr('id', 'room-' + key).data('room_id', key);
+        $icon.addClass('glyphicon playing-icon').addClass(val.closed ? 'glyphicon-stop' : 'glyphicon-play');
+        $item.append($('<span>').addClass('badge').append($icon));
+        $('#game_list').prepend($item);
+      })
+      FB.on("child_changed", function (snapshot) {
+        var key = snapshot.key();
+        var val = snapshot.val();
+        var $target = $(document.getElementById('room-' + key)).find('span.playing-icon');
+        $target.removeClass('glyphicon-stop glyphicon-play').addClass(val.closed ? 'glyphicon-stop' : 'glyphicon-play');
+      });
+      $('#game_list').on('click', 'li', function () {
+        Game.join($(this).data('room_id'));
+      });
+      $('#game_board').on('click', 'div.cell.attackable', function () {
+        Game.attack($(this).data('player'), $(this).data('point'));
+      });
+      $('#pass').on('click', function () {
+        Game.attack($(this).data('player'), '--');
+      });
+    });
+  }
+
+  Game.message = function (msg) {
+    $('#message').text(msg);
+  }
+
+  Game.close = function () {
+    Game.FBStat.child('closed').set(true);
+    var $stones = $('#game_board').find('.cell').has('input[name="space"]:not(:checked)');
+    var black = $stones.has('input[name="stone"]:checked').length;
+    var white = $stones.has('input[name="stone"]:not(:checked)').length;
+    if (white == black) {
+      Game.message('The game ends in a draw.');
+    } else {
+      Game.message('The winner is ' + (white < black ? BLACK : WHITE) + '.');
+    }
+    $('#current_player').text('This game is closed.');
+  }
+
+  Game.init = function () {
+    Game.queue.clear();
+    $.each(CELLS, function (_, c) { c.removeStone(); });
+    Game.resetDecision();
+    CELLS.d4.putStone(WHITE);
+    CELLS.e5.putStone(WHITE);
+    CELLS.e4.putStone(BLACK);
+    CELLS.d5.putStone(BLACK);
+
+    Game.FBHistory = Game.FBStat.child('history');
+    Game.FBHistory.on('child_added', function (snapshot) {
+      var v = snapshot.val();
+      Game.queue.push(function () { Game.move(v.player, v.point); }, 500);
+    });
+    Game.FBHistory.on('value', function (snapshot) {
+      Game.resetDecision();
+      Game.turn = snapshot.numChildren();
+      var ended = false;
+      var prevpass = false;
+      $.each(snapshot.val() || [], function (_, i) {
+        if (prevpass && i.point == "--") {
+          ended = true;
+          return false;
+        }
+        prevpass = (i.point == "--");
+      });
+      if (ended) {
+        Game.queue.push(function () { Game.close(); }, 0);
+        return;
+      }
+      Game.queue.push(function () { Game.waitDecision(Game.turn % 2 == 0 ? BLACK : WHITE); }, 0);
+    });
+    Game.FBStat.on('value', function (snapshot) { Game.stat = snapshot.val(); });
+  }
+
+  Game.join = function (key) {
+    Game.FBStat = FB.child(key);
+    Game.FBStat.once('value', function (snapshot) {
+      Game.stat = snapshot.val();
+      if (Game.stat.players[WHITE] == '') {
+        Game.stat.players[WHITE] = Game.user.uid;
+        Game.FBStat.update(Game.stat);
+      }
+    });
+    Game.init();
+  }
+
+  Game.create = function (name) {
+    Game.stat = (function () {
+      var st = { name: name || 'Anonymous Room', players: {} };
+      st.players[BLACK] = Game.user.uid;
+      st.players[WHITE] = '';
+      return st;
+    })();
+    Game.FBStat = FB.push(Game.stat);
+    Game.init();
+  }
+
+  Game.canPlay = function (player) {
+    return Game.stat.players[player] == Game.user.uid;
+  }
+
+  Game.waitDecision = function (player) {
+    if (Game.stat.closed) {
+      $('#current_player').text('This game is closed.');
+      return;
+    }
+    $('#current_player').text('Current player: ' + player);
+    var pass = true;
+    $.each(ALL_POINTS, function (_, pt) {
+      CELLS[pt].resetAttackable();
+      if (!CELLS[pt].isEmpty()) { return; }
+      $.each(FLIP_LINES[pt], function (_, line) {
+        if (0 < flipPoints(line, player).length) {
+          CELLS[pt].makeAttackable(Game, player);
+          return pass = false;
+        }
+      });
+    });
+    if (pass && Game.canPlay(player)) {
+      $('#pass').prop('disabled', false).data('player', player);
+    }
+  }
+
+  Game.resetDecision = function () {
+    $('#pass').prop('disabled', true);
+    $.each(ALL_POINTS, function (_, pt) { CELLS[pt].resetAttackable(); });
+  }
+
+  Game.move = function (player, pt) {
+    if (pt == '--') { // Pass
+      Game.message(player + ' passed.');
+      return;
+    }
+    Game.message(player + ' moved to ' + pt + '.');
+    CELLS[pt].putStone(player);
+    $.each(FLIP_LINES[pt], function (_, line) {
+      $.each(flipPoints(line, player), function (_, p) {
+        CELLS[p].flipStone();
+      });
+    });
+  }
+
+  Game.attack = function (player, pt) {
+    Game.resetDecision();
+    Game.FBHistory.push({ player: player, point: pt });
+  }
+
+  $(function () {
+    Game.login();
+  });
+// })(jQuery);
+</script>
+</body>
+</html>
